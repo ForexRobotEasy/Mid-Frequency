@@ -1,0 +1,84 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                              Mid Frequency.mq5 |
+//|                       Copyright 2022, Forex Robot Easy Team       |
+//|                  Developer's site: forexroboteasy.com              |
+//+------------------------------------------------------------------+
+
+// Define input parameters
+input double riskPercentage = 2.0;  // Risk percentage per trade
+input double stopLossPips = 50.0;   // Stop loss in pips
+input double takeProfitPips = 100.0; // Take profit in pips
+
+// Define global variables
+double lotSize; // Calculated lot size
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    // Calculate lot size based on risk percentage
+    lotSize = AccountBalance() * riskPercentage / 100 / stopLossPips / MarketInfo(Symbol(), MODE_TICKVALUE);
+    
+    // Print lot size and risk percentage
+    Print('Lot Size: ', lotSize);
+    Print('Risk Percentage: ', riskPercentage);
+    
+    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+    // Get current market conditions
+    double currentPrice = SymbolInfoDouble(Symbol(), PRICE_BID);
+    
+    // Calculate potential trading opportunities
+    double potentialBuyPrice = currentPrice - stopLossPips * SymbolInfoDouble(Symbol(), POINT);
+    double potentialSellPrice = currentPrice + stopLossPips * SymbolInfoDouble(Symbol(), POINT);
+    
+    // Generate trading signals based on analysis
+    if (Ask <= potentialBuyPrice)
+    {
+        // Send buy signal
+        SendTradeSignal('BUY');
+    }
+    else if (Bid >= potentialSellPrice)
+    {
+        // Send sell signal
+        SendTradeSignal('SELL');
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Send trade signal function                                       |
+//+------------------------------------------------------------------+
+void SendTradeSignal(string signal)
+{
+    // Print trade signal
+    Print('Trade Signal: ', signal);
+    
+    // Place trade based on signal
+    if (signal == 'BUY')
+    {
+        // Place buy trade with calculated lot size
+        OrderSend(Symbol(), OP_BUY, lotSize, Ask, 0, Ask - stopLossPips * SymbolInfoDouble(Symbol(), POINT), Ask + takeProfitPips * SymbolInfoDouble(Symbol(), POINT), 'Buy Trade', 0, 0, CLR_NONE);
+    }
+    else if (signal == 'SELL')
+    {
+        // Place sell trade with calculated lot size
+        OrderSend(Symbol(), OP_SELL, lotSize, Bid, 0, Bid + stopLossPips * SymbolInfoDouble(Symbol(), POINT), Bid - takeProfitPips * SymbolInfoDouble(Symbol(), POINT), 'Sell Trade', 0, 0, CLR_NONE);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    // Print deinitialization reason
+    Print('Deinitialization Reason: ', reason);
+}
